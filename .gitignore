@@ -1,0 +1,7 @@
+*.dcu
+*.exe
+*.log
+*.dof
+*.ddp
+*.cfg
+delayers.ini
