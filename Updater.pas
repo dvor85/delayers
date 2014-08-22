@@ -283,7 +283,7 @@ begin
           dfile := filedir + AnsiReplaceStr(sfile, '/', '\');
 
           if (Pos('.exe', dfile) <> 0) and (LowerCase(ExtractFileName(dfile)) <>
-            LowerCase(ExtractFileName(ParamStr(0)))) and (LowerCase(param) = 'exec') then
+            LowerCase(ExtractFileName(ParamStr(0)))) or (LowerCase(param) = 'exec') then
           begin
             ShellExecute(0, 'open', PChar(dfile), PChar(Param),
               PChar(ExtractFilePath(dfile)), SW_HIDE);
