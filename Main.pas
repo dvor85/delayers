@@ -195,6 +195,7 @@ begin
       data.Free;
       response.Free;
       basedata.is_getdata := Result;
+      IdHTTP1.Disconnect;
     end;
   end;
 end;
@@ -224,6 +225,7 @@ begin
     begin
       data.Free;
       response.Free;
+      IdHTTP1.Disconnect;
     end;
   end;
 end;
@@ -257,6 +259,7 @@ begin
     begin
       data.Free;
       response.Free;
+      IdHTTP1.Disconnect;
     end;
   end;
 end;
@@ -304,6 +307,7 @@ begin
     begin
       data.Free;
       response.Free;
+      IdHTTP1.Disconnect;
     end;
   end;
 end;
@@ -376,8 +380,10 @@ begin
     IdHTTP1.Request.BasicAuthentication := True;
     IdHTTP1.Request.UserAgent := ExtractFileName(ParamStr(0)) + ' v.' + Caption;
 
+
     Updater.CurrentVersion := Caption;
     Updater.VersionIndexURI := UpdUrl;
+    Updater.LogFilename := LogFile;
     Updater.Username := IdHTTP1.Request.Username;
     Updater.Password := IdHTTP1.Request.Password;
     Updater.SelfTimer := False;

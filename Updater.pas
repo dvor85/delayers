@@ -1,7 +1,9 @@
 unit Updater;
 
 interface
-uses classes, Sysutils, extctrls, IdBaseComponent, IdComponent, IdTCPConnection, IdTCPClient, IdHTTP;
+
+uses Classes, SysUtils, ExtCtrls, IdBaseComponent, IdComponent,
+  IdTCPConnection, IdTCPClient, IdHTTP;
 
 type
 
@@ -18,26 +20,28 @@ type
     FUserName: string;
     FPassword: string;
     FTimer: TTimer;
-    FUpdateInterval: Cardinal;
-    FSelfTimer: Boolean;
+    FUpdateInterval: cardinal;
+    FSelfTimer: boolean;
+    FChecked: boolean;
     procedure TimerProc(Sender: TObject);
     procedure AddLog(LogString: string);
-    procedure SplitStr(const Str: string; const Sym: string; var data: TstrArray);
-    function ProcessMessage: Boolean;
-    function UpdateSelfExe: Integer;
-    procedure SetUserName(const value: string);
-    procedure SetPassword(const value: string);
-    procedure SetUpdateInterval(const value: Cardinal);
-    procedure SetSelfTimer(const value: Boolean);
-    procedure SetCurrentVersion(const Value: String);
-    procedure SetVersionIndexURI(const Value:string);
+    procedure SplitStr(const Str: string; const Sym: string; var Data: TstrArray);
+    function ProcessMessage: boolean;
+    function UpdateSelfExe: integer;
+    procedure SetUserName(const Value: string);
+    procedure SetPassword(const Value: string);
+    procedure SetUpdateInterval(const Value: cardinal);
+    procedure SetSelfTimer(const Value: boolean);
+    procedure SetCurrentVersion(const Value: string);
+    procedure SetVersionIndexURI(const Value: string);
     function GetNewVersionNo: string;
+    function GetEnvironmentString(Str: string): string;
 
   public
     constructor Create;
     destructor Destroy; override;
-    function UpdateFiles: Integer;
-    property LogFile: string read FLogFile write FLogFile;
+    function UpdateFiles: integer;
+    property LogFilename: string read FLogFile write FLogFile;
     property VersionIndexURI: string read FVersionIndexURI write SetVersionIndexURI;
     property FilesList: TStringList read FFilesList;
     property Username: string read FUserName write SetUserName;
@@ -45,12 +49,13 @@ type
     property CurrentVersion: string read FCurVersion write SetCurrentVersion;
     property NewVersion: string read GetNewVersionNo write FNewVersion;
     property SelfTimer: boolean read FSelfTimer write SetSelfTimer;
-    property UpdateInterval: Cardinal read FUpdateInterval write SetUpdateInterval;
+    property Checked: boolean read FChecked;
+    property UpdateInterval: cardinal read FUpdateInterval write SetUpdateInterval;
   end;
 
 implementation
-uses StrUtils, ShellProcess, ShellApi, Windows, Messages;
 
+uses StrUtils, ShellProcess, ShellApi, Windows, Messages;
 
 constructor TUpdater.Create;
 var
@@ -70,23 +75,33 @@ begin
   FNewVersion := '';
   FVersionIndexURI := '';
   IdHTTP := TIdHTTP.Create;
-  IdHTTP.Request.UserAgent:=ExtractFileName(ParamStr(0));
+  IdHTTP.Request.UserAgent := ExtractFileName(ParamStr(0));
   FFilesList := TStringList.Create;
   FTimer := TTimer.Create(nil);
   FUpdateInterval := 1000;
   FTimer.Interval := FUpdateInterval;
   FSelfTimer := False;
+  FChecked := False;
   FTimer.Enabled := FSelfTimer;
   FTimer.OnTimer := TimerProc;
 end;
 
-procedure TUpdater.SetCurrentVersion(const Value: String);
+function TUpdater.GetEnvironmentString(Str: string): string;
+var
+  dest: PChar;
 begin
-  FCurVersion:=Value;
-  IdHTTP.Request.UserAgent:=ExtractFileName(ParamStr(0))+' v.'+FCurVersion;
+  dest := AllocMem(1024);
+  ExpandEnvironmentStrings(PChar(Str), dest, 1024);
+  result := dest;
 end;
 
-procedure TUpdater.SetVersionIndexURI(const Value:string);
+procedure TUpdater.SetCurrentVersion(const Value: string);
+begin
+  FCurVersion := Value;
+  IdHTTP.Request.UserAgent := ExtractFileName(ParamStr(0)) + ' v.' + FCurVersion;
+end;
+
+procedure TUpdater.SetVersionIndexURI(const Value: string);
 begin
   FVersionIndexURI := Value;
   IdHTTP.URL.URI := FVersionIndexURI;
@@ -100,9 +115,9 @@ begin
   FTimer.Free;
 end;
 
-procedure TUpdater.SetSelfTimer(const value: Boolean);
+procedure TUpdater.SetSelfTimer(const Value: boolean);
 begin
-  FSelfTimer := value;
+  FSelfTimer := Value;
   FTimer.Enabled := FSelfTimer;
 end;
 
@@ -112,14 +127,14 @@ begin
     UpdateFiles;
 end;
 
-procedure TUpdater.SplitStr(const Str: string; const Sym: string; var data: TStrArray);
+procedure TUpdater.SplitStr(const Str: string; const Sym: string; var Data: TStrArray);
 var
   s: string;
   p, l: integer;
   tmp: string;
 begin
   l := length(Sym);
-  SetLength(data, 0);
+  SetLength(Data, 0);
   s := lowercase(trim(str));
   while (length(s) > 0) do
   begin
@@ -129,38 +144,38 @@ begin
       tmp := trim(copy(s, 1, p + l - 2));
       if length(tmp) > 0 then
       begin
-        SetLength(data, Length(data) + 1);
-        data[length(data) - 1] := Tmp;
+        SetLength(Data, Length(Data) + 1);
+        Data[length(Data) - 1] := Tmp;
       end;
-      delete(s, 1, p);
+      Delete(s, 1, p);
     end
     else
     begin
       if length(s) > 0 then
       begin
-        SetLength(data, Length(data) + 1);
-        data[length(data) - 1] := s;
+        SetLength(Data, Length(Data) + 1);
+        Data[length(Data) - 1] := s;
         s := '';
       end;
     end;
   end;
 end;
 
-procedure TUpdater.SetUpdateInterval(const value: Cardinal);
+procedure TUpdater.SetUpdateInterval(const Value: cardinal);
 begin
   FUpdateInterval := Value;
   FTimer.Interval := FUpdateInterval;
 end;
 
-procedure TUpdater.SetUserName(const value: string);
+procedure TUpdater.SetUserName(const Value: string);
 begin
-  FUserName := value;
+  FUserName := Value;
   IdHTTP.Request.BasicAuthentication := True;
   IdHTTP.Request.Username := FUserName;
 
 end;
 
-procedure TUpdater.SetPassword(const value: string);
+procedure TUpdater.SetPassword(const Value: string);
 begin
   FPassword := Value;
   IdHTTP.Request.BasicAuthentication := True;
@@ -170,29 +185,35 @@ end;
 function TUpdater.GetNewVersionNo: string;
 begin
   try
-    FFilesList.Text := IdHTTP.Get(FVersionIndexURI);
-    result := FFilesList[0];
-    FFilesList.Delete(0);
-  except
-    result := '';
-    FFilesList.Clear;
-    Exit;
+    try
+      FFilesList.Text := IdHTTP.Get(FVersionIndexURI);
+      Result := FFilesList[0];
+      FFilesList.Delete(0);
+      FChecked := True;
+    except
+      Result := '';
+      FFilesList.Clear;
+      Exit;
+    end;
+  finally
+    IdHTTP.Disconnect;
   end;
 end;
 
 function TUpdater.UpdateFiles: integer;
 var
   response: TMemoryStream;
-  i, j, k: Integer;
+  i, j, k: integer;
   fileDir: string;
   dfile, sfile, param, new_exe, new_exe_param: string;
   depended: TStrArray;
   ASource: TMemoryStream;
 begin
-  if FFilesList.Count = 0 then Exit;
+  if FFilesList.Count = 0 then
+    Exit;
   fileDir := ExtractFilePath(ParamStr(0));
   new_exe := '';
-  result := 0;
+  Result := 0;
   response := TMemoryStream.Create;
   ASource := TMemoryStream.Create;
   try
@@ -216,19 +237,22 @@ begin
           AddLog('Try to update file: ' + dfile);
           try
             try
-              IdHTTP.Post('http://' + IdHTTP.URL.Host + ':' + IdHTTP.URL.Port + IdHTTP.URL.Path + sfile, ASource, response);
-              Inc(result);
+              IdHTTP.Post('http://' + IdHTTP.URL.Host + ':' +
+                IdHTTP.URL.Port + IdHTTP.URL.Path + sfile, ASource, response);
+              Inc(Result);
             except
               AddLog('Error get file: ' + dfile);
               Continue;
             end;
             try
-              if LowerCase(ExtractFileName(dfile)) = LowerCase(ExtractFileName(ParamStr(0))) then
+              if LowerCase(ExtractFileName(dfile)) =
+                LowerCase(ExtractFileName(ParamStr(0))) then
               begin
                 dfile := ExtractFilePath(dfile) + 'tmp_' + ExtractFileName(dfile);
                 new_exe := dfile;
                 new_exe_param := param;
-              end else if (Pos('.exe', dfile) <> 0) then
+              end
+              else if (Pos('.exe', dfile) <> 0) then
               begin
                 if KillTask(LowerCase(ExtractFileName(dfile))) = 0 then
                   Sleep(1000);
@@ -241,6 +265,7 @@ begin
             end
           finally
             response.Clear;
+            IdHTTP.Disconnect;
             ProcessMessage;
           end;
 
@@ -257,47 +282,53 @@ begin
           end;
           dfile := filedir + AnsiReplaceStr(sfile, '/', '\');
 
-          if (Pos('.exe', dfile) <> 0) and (LowerCase(ExtractFileName(dfile)) <> LowerCase(ExtractFileName(ParamStr(0))))  and (LowerCase(param)='exec') then
+          if (Pos('.exe', dfile) <> 0) and (LowerCase(ExtractFileName(dfile)) <>
+            LowerCase(ExtractFileName(ParamStr(0)))) and (LowerCase(param) = 'exec') then
           begin
-            ShellExecute(0, 'open', PChar(dfile), PChar(Param), PChar(ExtractFilePath(dfile)), SW_HIDE);
-          end
+            ShellExecute(0, 'open', PChar(dfile), PChar(Param),
+              PChar(ExtractFilePath(dfile)), SW_HIDE);
+          end;
         end;
       except
         AddLog('Error create files');
         Dec(Result);
         Continue;
       end;
-      if LowerCase(ExtractFileName(new_exe)) = LowerCase('tmp_' + ExtractFileName(ParamStr(0))) then
+      if LowerCase(ExtractFileName(new_exe)) = LowerCase('tmp_' +
+        ExtractFileName(ParamStr(0))) then
       begin
-        ShellExecute(0, 'open', PChar(new_exe), PChar(new_exe_param), PChar(ExtractFilePath(new_exe)), SW_HIDE);
+        ShellExecute(0, 'open', PChar(new_exe), PChar(new_exe_param),
+          PChar(ExtractFilePath(new_exe)), SW_HIDE);
         ProcessTerminate(GetCurrentProcessId);
       end;
     end;
   finally
     ASource.Free;
     response.Free;
-    SetLength(depended,0);
+    SetLength(depended, 0);
   end;
 end;
 
-function TUpdater.UpdateSelfExe: Integer;
+function TUpdater.UpdateSelfExe: integer;
 var
-  p,i: Integer;
+  p, i: integer;
   apName: string;
-  params:string;
+  params: string;
 begin
   p := Pos('tmp_', LowerCase(ExtractFileName(ParamStr(0))));
   if p <> 0 then
   begin
-    Params:='';
-    for i:=1 to ParamCount do
-      Params:=ParamStr(i)+' ';
-    apName := copy(ExtractFileName(ParamStr(0)), p + length('tmp_'), Length(ExtractFileName(ParamStr(0))) - (p + length('tmp_')) + 1);
+    Params := '';
+    for i := 1 to ParamCount do
+      Params := ParamStr(i) + ' ';
+    apName := copy(ExtractFileName(ParamStr(0)), p + length('tmp_'),
+      Length(ExtractFileName(ParamStr(0))) - (p + length('tmp_')) + 1);
     if KillTask(LowerCase(apname)) = 0 then
       Sleep(1000);
-    CopyFile(PChar(paramstr(0)), PChar(ExtractFilePath(paramstr(0)) + apname), false);
+    CopyFile(PChar(ParamStr(0)), PChar(ExtractFilePath(ParamStr(0)) + apname), False);
 
-    ShellExecute(0, 'open', PChar(ExtractFilePath(paramstr(0)) + apname), PChar(params), PChar(ExtractFilePath(ParamStr(0))), SW_HIDE);
+    ShellExecute(0, 'open', PChar(ExtractFilePath(ParamStr(0)) + apname),
+      PChar(params), PChar(ExtractFilePath(ParamStr(0))), SW_HIDE);
     ProcessTerminate(GetCurrentProcessId);
   end;
 end;
@@ -307,7 +338,7 @@ var
   F: TFileStream;
   PStr: PChar;
   Str: string;
-  LengthLogString: Cardinal;
+  LengthLogString: cardinal;
 begin
   Str := DateTimeToStr(Now()) + ': ' + LogString + #13#10;
   LengthLogString := Length(Str);
@@ -315,7 +346,10 @@ begin
     if FileExists(FLogFile) then
       F := TFileStream.Create(FLogFile, fmOpenWrite)
     else
+    begin
+      ForceDirectories(ExtractFileDir(FLogFile));
       F := TFileStream.Create(FLogFile, fmCreate);
+    end;
   except
     Exit;
   end;
@@ -334,8 +368,9 @@ begin
   end;
 end;
 
-function TUpdater.ProcessMessage: Boolean;
-  function IsKeyMsg(var Msg: TMsg): Boolean;
+function TUpdater.ProcessMessage: boolean;
+
+  function IsKeyMsg(var Msg: TMsg): boolean;
   const
     CN_BASE = $BC00;
   var
@@ -353,11 +388,12 @@ function TUpdater.ProcessMessage: Boolean;
             Result := True;
         end
         else
-          if (LongWord(GetWindowLong(Wnd, GWL_HINSTANCE)) = HInstance) then
-            if SendMessage(Wnd, CN_BASE + Message, WParam, LParam) <> 0 then
-              Result := True;
+        if (longword(GetWindowLong(Wnd, GWL_HINSTANCE)) = HInstance) then
+          if SendMessage(Wnd, CN_BASE + Message, WParam, LParam) <> 0 then
+            Result := True;
       end;
   end;
+
 var
   Msg: TMsg;
 begin
@@ -376,4 +412,3 @@ end;
 
 
 end.
-
