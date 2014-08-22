@@ -363,18 +363,20 @@ begin
 
     sb_Time := StrToTime(ini.ReadString('Global', 'bTime', '8:00:00'));
     se_Time := StrToTime(ini.ReadString('Global', 'eTime', '17:00:00'));
-    Interval := ini.ReadInteger('Global', 'Interval', 60 * 1000);
+    Interval := ini.ReadInteger('Global', 'Interval', 60) * 1000;
     delta := ini.ReadInteger('Global', 'delta', 0);
     if LogFile = '' then
       LogFile := ini.ReadString('Global', 'LogFile', '');
     LogFile := GetEnvironmentString(LogFile);
     if TmpFile = '' then
+      TmpFile := ini.ReadString('Global', 'TmpFile', '');
+    TmpFile := GetEnvironmentString(TmpFile);
+    IdHTTP1.Request.Username := ini.ReadString('Global', 'Username', '');
 
-
-      if pass <> '' then
-        ini.WriteString('Global', 'Password', EncodeString(pass))
-      else
-        pass := DecodeString(ini.ReadString('Global', 'Password', ''));
+    if pass <> '' then
+      ini.WriteString('Global', 'Password', EncodeString(pass))
+    else
+      pass := DecodeString(ini.ReadString('Global', 'Password', ''));
 
     IdHTTP1.Request.Password := pass;
     IdHTTP1.Request.BasicAuthentication := True;
@@ -402,6 +404,7 @@ begin
         Updater.UpdateFiles;
     end;
     lbledt1.Text := basedata.name;
+    tmr1.Interval := Interval;
     tmr1.Enabled := True;
   finally
     ini.Free;
