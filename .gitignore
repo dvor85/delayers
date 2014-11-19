@@ -1,8 +1,3 @@
-*.dcu
-*.exe
-*.log
-*.dof
-*.ddp
-*.cfg
-delayers.ini
-update_delayers.bat
+config/
+update/
+.htaccess
