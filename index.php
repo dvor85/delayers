@@ -31,6 +31,8 @@
 	    $exceptions=array();
 	
 	$my=new datamysql(MYSQL_HOST,MYSQL_BASE,MYSQL_USER,MYSQL_PASS);
+	//$my->debug=true;
+	
 	//$workers=&$my->query("select * from workers");
 	
 	
@@ -111,7 +113,7 @@ if (isset($_POST["dt1_day"])&&isset($_POST["dt1_month"])&&isset($_POST["dt1_year
 	$dt2_month=(int)substr(strip_tags(stripslashes(trim($_POST["dt2_month"]))),0,2);
 	$dt2_year=(int)substr(strip_tags(stripslashes(trim($_POST["dt2_year"]))),0,4);
 	$dt2="$dt2_year-$dt2_month-$dt2_day";
-	
+	$minutes_per_day = 528;
 	
 	if (isset($_POST["set_period"])) {
 	$q="select *  
@@ -156,6 +158,7 @@ if (isset($_POST["dt1_day"])&&isset($_POST["dt1_month"])&&isset($_POST["dt1_year
 		//$datetime_event=$events[$i]["datetime_event"];
 		$worker_name=$events[$i]["worker_name"];	
 		$ip=$events[$i]["ip"];
+		
 		//$type_early_reason=$events[$i]["type_early_reason"];
 		//$type_delay_reason=$events[$i]["type_delay_reason"];
 		//$sdelay_reason=$reasons[$type_delay_reason]["reason"];
@@ -181,7 +184,7 @@ if (isset($_POST["dt1_day"])&&isset($_POST["dt1_month"])&&isset($_POST["dt1_year
 			$sum_delay_color=($sum_delay>0)?"#ff0000":"#00ff00";
 			$sum_early_color=($sum_early>0)?"#ff0000":"#00ff00";
 
-			$effect=($count_wd>0)?round(100*((530*$count)-($sum_delay+$sum_early))/(530*$count_wd)):"&#8734";
+			$effect=($count_wd>0)?round(100*(($minutes_per_day*$count)-($sum_delay+$sum_early))/($minutes_per_day*$count_wd)):"&#8734";
 			if ($effect<0) $effect=0;
 			echo "<tr><th colspan='1' align='right'>Всего за $count дн:</th><th style='color:$sum_delay_color'>$sum_delay</th><th align='right'>Всего за $count дн:</th><th style='color:$sum_early_color'>$sum_early</th><th>Эффективность = $effect%</th></tr>";
 			echo "</table><br><hr style='page-break-after:always'><h3><a href='#$id_worker|$ip' title='id=$id_worker'>$worker_name</a></h3>";
@@ -205,8 +208,8 @@ if (isset($_POST["dt1_day"])&&isset($_POST["dt1_month"])&&isset($_POST["dt1_year
 			//$sum_by_delay_reasons=array();
 			//$sum_by_early_reasons=array();
 		}
-		$sum_delay+=abs($delay)<530?$delay:0;	
-		$sum_early+=abs($early)<530?$early:0;
+		$sum_delay+=abs($delay)<$minutes_per_day?$delay:0;	
+		$sum_early+=abs($early)<$minutes_per_day?$early:0;
 		//$sum_by_delay_reasons[$type_delay_reason]+=$delay;
 		//$sum_by_early_reasons[$type_early_reason]+=$early;
 		$count++;
@@ -234,7 +237,7 @@ if (isset($_POST["dt1_day"])&&isset($_POST["dt1_month"])&&isset($_POST["dt1_year
 	$sum_delay_color=($sum_delay>0)?"#ff0000":"#00ff00";
 	$sum_early_color=($sum_early>0)?"#ff0000":"#00ff00";
 	
-	$effect=($count_wd>0)?round(100*((530*$count)-($sum_delay+$sum_early))/(530*$count_wd)):"&#8734";
+	$effect=($count_wd>0)?round(100*(($minutes_per_day*$count)-($sum_delay+$sum_early))/($minutes_per_day*$count_wd)):"&#8734";
 	if ($effect<0) $effect=0;
 	echo "<tr ><th colspan='1' align='right'>Всего за $count дн:</th><th style='color:$sum_delay_color'>$sum_delay</th><th align='right'>Всего за $count дн:</th><th style='color:$sum_early_color'>$sum_early</th><th>Эффективность = $effect%</th></tr>";
 			

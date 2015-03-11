@@ -8,7 +8,7 @@
 	
 	$my=new datamysql(MYSQL_HOST,MYSQL_BASE,MYSQL_USER,MYSQL_PASS);	
 	$ip=getremoteaddr();
-	
+	$minutes_per_day=528;
 	
 	
 	if (isset($_POST["is_delay"]) && isset($_POST["delay"]) && !empty($_POST["id"]))
@@ -97,8 +97,8 @@
 		$is_reg_delay=(int)((!$events)xor($diffdays==0));
 		$dt1=date("Y-m-d",mktime(0,0,0,date("n"),1,date("Y")));
 		$q="SELECT 
-				(sum(530-(IF(abs(delay)<530,delay,0)-IF(abs(events.early)<530,early,0)))) as worked,
-                (IF(WEEKDAY(datetime_event)<5,sum(530),0)) as need_worked  
+				(sum($minutes_per_day-(IF(abs(delay)<$minutes_per_day,delay,0)-IF(abs(events.early)<$minutes_per_day,early,0)))) as worked,
+                (IF(WEEKDAY(datetime_event)<5,sum($minutes_per_day),0)) as need_worked  
 			FROM events
 			WHERE (DATE(datetime_event) BETWEEN '$dt1' and DATE(NOW())) AND (id_worker=$id_worker)";
 		/*$q="SELECT 
