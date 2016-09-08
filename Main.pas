@@ -358,8 +358,8 @@ begin
 
   ini := TIniFile.Create(IniPath);
   try
-    AUrl := ini.ReadString('Global', 'AUrl', 'localhost');
-    UpdUrl := ini.ReadString('Global', 'UpdUrl', 'localhost');
+    AUrl := DecodeString(ini.ReadString('Global', 'AUrl', 'localhost'));
+    UpdUrl := DecodeString(ini.ReadString('Global', 'UpdUrl', 'localhost'));
 
     sb_Time := StrToTime(ini.ReadString('Global', 'bTime', '8:00:00'));
     se_Time := StrToTime(ini.ReadString('Global', 'eTime', '17:00:00'));

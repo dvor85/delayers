@@ -3,7 +3,7 @@ object Form1: TForm1
   Top = 324
   BorderIcons = []
   BorderStyle = bsNone
-  Caption = '2.43'
+  Caption = '2.44'
   ClientHeight = 307
   ClientWidth = 421
   Color = clBtnFace
